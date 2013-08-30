@@ -200,11 +200,15 @@
 (defvar elixir-mode-define-names
   '("def"
     "defdelegate"
+    "defexception"
+    "defimpl"
     "defmacro"
     "defmacrop"
     "defoverridable"
     "defp"
-    "defmacrop")
+    "defprotocol"
+    "defrecord"
+    "defrecordp")
   "Elixir mode def-like keywords.")
 (defvar elixir-mode-keyword-names
   '("->"
@@ -216,12 +220,12 @@
     "quote"
     "unquote"
     "unquote_splicing"
-    "var"
+    "var!"
     "do"
     "after"
-    "for"
     "def"
     "defdelegate"
+    "defexception"
     "defimpl"
     "defmacro"
     "defmacrop"
@@ -232,19 +236,26 @@
     "defrecord"
     "destructure"
     "alias"
+    "alias!"
     "require"
     "import"
     "use"
     "if"
+    "unless"
+    "else"
     "true"
     "false"
+    "nil"
+    "and"
+    "or"
+    "xor"
+    "not"
     "when"
     "case"
     "cond"
     "throw"
-    "then"
-    "else"
-    "elsif"
+    "raise"
+    "super"
     "try"
     "catch"
     "rescue"
@@ -254,45 +265,63 @@
     "end")
   "Elixir mode keywords.")
 (defvar elixir-mode-module-names
-  '("Behavior"
+  '("Access"
+    "Any"
+    "Application"
+    "Atom"
+    "Behaviour"
     "Binary"
+    "BitString"
     "Bitwise"
-    "Builtin"
-    "Elixir"
     "Code"
+    "Dict"
     "EEx"
+    "Elixir"
     "Enum"
+    "Enumerable"
     "ExUnit"
     "Exception"
     "File"
-    "GenServer"
     "Function"
+    "GenEvent"
+    "GenFSM"
     "GenServer"
-    "GenTCP"
     "HashDict"
+    "HashSet"
+    "IEx"
+    "Inspect"
     "IO"
+    "Kernel"
     "Keyword"
     "List"
-    "Math"
+    "Macro"
+    "Mix"
     "Module"
     "Node"
+    "Number"
     "OptionParser"
-    "OrdDict"
+    "Path"
+    "PID"
     "Port"
     "Process"
+    "Range"
     "Record"
-    "Regexp"
+    "Reference"
+    "Regex"
+    "Set"
+    "Stream"
+    "String"
+    "Supervisor"
     "System"
     "Tuple"
-    "URI"
-    "UnboundMethod")
+    "URI")
   "Elixir mode modules.")
 (defvar elixir-mode-builtin-names
-  '("Erlang"
-    "__MODULE__"
-    "__LINE__"
+  '("__CALLER__"
+    "__DIR__"
+    "__ENV__"
     "__FILE__"
-    "__ENV__")
+    "__MODULE__")
   "Elixir mode builtins.")
 (defvar elixir-mode-operator-names
   '("+"
@@ -301,8 +330,6 @@
     "-"
     "/"
     "*"
-    "div"
-    "rem"
     "=="
     "!="
     "<="
@@ -311,20 +338,21 @@
     ">"
     "==="
     "!=="
-    "and"
-    "or"
-    "not"
+    "=~"
+    "&"
     "&&"
+    "&&&"
     "||"
+    "|||"
+    "|>"
     "!"
     "."
-    "#"
+    ".."
     "="
-    ":="
     "<-")
   "Elixir mode operators.")
 
-(defvar elixir-mode-sigils '("B" "C" "R" "b" "c" "r")
+(defvar elixir-mode-sigils '("B" "C" "R" "W" "b" "c" "r" "w")
   "%-prefixed sigils that are understood by `elixir-mode'.")
 
 (defvar elixir-basic-offset 2)
@@ -353,6 +381,9 @@
 
    ;; % Sigils
    `(,(concat "\\<%" (regexp-opt elixir-mode-sigils t) "\\>") . font-lock-builtin-face)
+
+   ;; ? characters
+   '("?[\\]?." . font-lock-builtin-face)
 
    ;; builtins:
    `(,(concat "\\<" (regexp-opt elixir-mode-builtin-names t) "\\>") . font-lock-builtin-face)

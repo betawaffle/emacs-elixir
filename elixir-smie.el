@@ -16,7 +16,7 @@
     ;; Note that ?_ might be better as class "_", but either seems to
     ;; work:
     (modify-syntax-entry ?_ "w" elixir-mode-syntax-table)
-    (modify-syntax-entry ?? "w" elixir-mode-syntax-table)
+    (modify-syntax-entry ?? "'" elixir-mode-syntax-table)
 
     (modify-syntax-entry ?' "\"" elixir-mode-syntax-table)
     (modify-syntax-entry ?# "<" elixir-mode-syntax-table)
@@ -33,30 +33,7 @@
   "Elixir mode syntax table.")
 
 (defun elixir-syntax-propertize (start end)
-  (save-excursion
-    (goto-char start)
-    ;; The ? character on its own is supposed to escape whatever comes
-    ;; after it (including any escaped chars. Examples: ?\# and ?".
-    (while (search-forward "?" end t)
-      (let ((start (1- (point))))
-        (unless (or (= (char-syntax (char-before (- (point) 1))) ?w)
-                    (= (char-syntax (char-before (- (point) 1))) ?_))
-          (put-text-property (1- (point))
-                             (point)
-                             'syntax-table
-                             '(?|))
-          (when (= (char-after) ?\\)
-            (forward-char)
-            (put-text-property (1- (point))
-                               (point)
-                               'syntax-table
-                               '(?\s)))
-          (forward-char)
-          (put-text-property (1- (point))
-                             (point)
-                             'syntax-table
-                             '(?|))
-          (put-text-property start (point) 'font-lock-face 'font-lock-string-face))))))
+  ())
 
 (defmacro elixir-smie-debug (message &rest format-args)
   `(progn
@@ -84,7 +61,7 @@
                                  "<" ">"                                                          ; comp1
                                  "+" "-" "*" "/" "=" "|" "!" "^" "@"                              ; op1
                                  "&&" "||" "<>" "++" "--" "**" "//" "::" "<-"  ".." "/>" "=~"     ; op2 (minus ->)
-                                 "xor" "|>"                                                       ; http://elixir-lang.org/docs/stable/Kernel.html
+                                 "and" "or" "xor" "|>"                                            ; http://elixir-lang.org/docs/stable/Kernel.html
                                  )
   (elixir-smie-define-regexp dot "\\.")
   (elixir-smie-define-regexp comma ",")
@@ -94,7 +71,7 @@
   (elixir-smie-define-regexp-opt parens "(" ")" "{" "}" "[" "]" "<<" ">>"))
 
 (defconst elixir-smie-block-intro-keywords
-  '(do else catch after rescue -> COMMA OP)
+  '(do else catch after rescue fn -> COMMA OP)
   "Keywords in which newlines cause confusion for the parser.")
 
 (defun elixir-skip-comment-backward ()
@@ -209,11 +186,16 @@ Return non-nil if any line breaks were skipped."
                (let (token)
                  (save-excursion
                    (block nil
-                     (while (and (not (= (point) (point-min))) (not (string= "" token)) (not (string= "do" token)) (not (string= "fn" token)))
+                     (while (and (not (= (point) (point-min)))
+                                 (not (string= "" token))
+                                 (not (string= "do" token))
+                                 (not (string= "fn" token))
+                                 )
                        (setq token (elixir-smie-next-token-no-lookaround nil nil))
                        (when (string= "->" token)
                          (return t)))
-                     (when (or (string= token "do"))
+                     (when (or (string= token "do")
+                               (string= token "fn"))
                        t)))))
           "MATCH-STATEMENT-DELIMITER"
         current-token))))
@@ -240,11 +222,10 @@ Return non-nil if any line breaks were skipped."
            ("try" "do" statements "catch" match-statements "end")
            ("try" "do" statements "end")
            ("case" non-block-expr "do" match-statements "end")
-           ("fn" match-statement "end")
            ("function" "do" match-statements "end")
            (non-block-expr "do" statements "end")
-           (expr)
-           )
+           (non-block-expr "fn" match-statements "end")
+           (expr))
           (non-block-expr
            (non-block-expr "OP" non-block-expr)
            (non-block-expr "DOT" non-block-expr)
@@ -258,7 +239,13 @@ Return non-nil if any line breaks were skipped."
            (match-statement))
           (match-statement
            (non-block-expr "->" statements)))
-        '((assoc "DOT") (assoc "if") (assoc "do:") (assoc "else:") (assoc "COMMA") (assoc "OP") (assoc "->" ";")))))
+        '((assoc "DOT")
+          (assoc "if")
+          (assoc "do:")
+          (assoc "else:")
+          (assoc "COMMA")
+          (assoc "OP")
+          (assoc "->" ";")))))
 
 (defvar elixir-smie-indent-basic 2)
 
@@ -290,9 +277,9 @@ Return non-nil if any line breaks were skipped."
     (`(:after . "->")
      (when (smie-rule-hanging-p)
        elixir-smie-indent-basic))
-    (`(,_ . ,(or `"COMMA")) (smie-rule-separator kind))
+    ;;(`(,_ . ,(or `"COMMA")) (smie-rule-separator kind))
     (`(:after . "=") elixir-smie-indent-basic)
-    (`(:after . ,(or `"do"))
+    (`(:after . ,(or `"do" `"fn"))
      elixir-smie-indent-basic)
     (`(:list-intro . ,(or `"do"))
      t)))
